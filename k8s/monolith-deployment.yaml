@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helmjet-atlas
+  namespace: helmjet-atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: helmjet-atlas
+  template:
+    metadata:
+      labels:
+        app: helmjet-atlas
+    spec:
+      containers:
+      - name: helmjet-atlas
+        image: docker.io/dancundy/helmjet-atlas:monolith
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MONGO_URI
+          value: mongodb://mongo:27017
+        - name: MONGO_DB
+          value: helmjet-atlas
+        - name: PORT
+          value: "8080"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: helmjet-atlas
+  namespace: helmjet-atlas
+spec:
+  selector:
+    app: helmjet-atlas
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: helmjet-atlas
+  namespace: helmjet-atlas
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: helmjet-atlas
+            port:
+              number: 80

@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: helmjet-atlas-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_INITDB_DATABASE: helmjet-atlas
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - helmjet-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: helmjet-atlas-app
+    environment:
+      MONGO_URI: mongodb://admin:admin@mongodb:27017
+      MONGO_DB: helmjet-atlas
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+    networks:
+      - helmjet-network
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  helmjet-network:
+    driver: bridge

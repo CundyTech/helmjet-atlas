@@ -1,0 +1,1390 @@
+openapi: 3.0.0
+info:
+  title: HelmJet Atlas API
+  description: REST API for visualizing Kubernetes microservices topology and NATS Jetstream message bus architecture
+  version: 1.0.0
+  contact:
+    name: HelmJet Atlas
+    url: https://github.com/helmjet/atlas
+  license:
+    name: MIT
+
+servers:
+- url: http://localhost:8080
+  description: Development server
+- url: https://api.example.com
+  description: Production server
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the API server
+      operationId: getHealth
+      tags:
+      - Health
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+
+  /api/v1/microservices:
+    post:
+      summary: Create a new microservice
+      operationId: createMicroservice
+      tags:
+      - Microservices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MicroserviceInput'
+      responses:
+        '201':
+          description: Microservice created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: objectid
+                    example: "507f1f77bcf86cd799439011"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List microservices
+      operationId: listMicroservices
+      tags:
+      - Microservices
+      parameters:
+      - name: namespace
+        in: query
+        description: Filter by namespace
+        schema:
+          type: string
+      - name: cluster
+        in: query
+        description: Filter by cluster
+        schema:
+          type: string
+      - name: status
+        in: query
+        description: Filter by status
+        schema:
+          type: string
+          enum: [ Running, Pending, Failed, Unknown ]
+      - name: limit
+        in: query
+        description: Maximum number of results
+        schema:
+          type: integer
+          default: 100
+          minimum: 1
+      - name: skip
+        in: query
+        description: Number of results to skip
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      responses:
+        '200':
+          description: List of microservices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Microservice'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/microservices/{id}:
+    get:
+      summary: Get a specific microservice
+      operationId: getMicroservice
+      tags:
+      - Microservices
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Microservice ID
+        schema:
+          type: string
+          format: objectid
+      responses:
+        '200':
+          description: Microservice details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Microservice'
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Microservice not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update a microservice
+      operationId: updateMicroservice
+      tags:
+      - Microservices
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Microservice ID
+        schema:
+          type: string
+          format: objectid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MicroserviceInput'
+      responses:
+        '200':
+          description: Microservice updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "updated"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete a microservice
+      operationId: deleteMicroservice
+      tags:
+      - Microservices
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Microservice ID
+        schema:
+          type: string
+          format: objectid
+      responses:
+        '200':
+          description: Microservice deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "deleted"
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/streams:
+    post:
+      summary: Create a new NATS stream
+      operationId: createStream
+      tags:
+      - Streams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NATSStreamInput'
+      responses:
+        '201':
+          description: Stream created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: objectid
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List NATS streams
+      operationId: listStreams
+      tags:
+      - Streams
+      parameters:
+      - name: cluster
+        in: query
+        description: Filter by cluster
+        schema:
+          type: string
+      - name: limit
+        in: query
+        description: Maximum number of results
+        schema:
+          type: integer
+          default: 100
+          minimum: 1
+      - name: skip
+        in: query
+        description: Number of results to skip
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      responses:
+        '200':
+          description: List of NATS streams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NATSStream'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/streams/{id}:
+    get:
+      summary: Get a specific NATS stream
+      operationId: getStream
+      tags:
+      - Streams
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Stream ID
+        schema:
+          type: string
+          format: objectid
+      responses:
+        '200':
+          description: Stream details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NATSStream'
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update a NATS stream
+      operationId: updateStream
+      tags:
+      - Streams
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Stream ID
+        schema:
+          type: string
+          format: objectid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NATSStreamInput'
+      responses:
+        '200':
+          description: Stream updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "updated"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete a NATS stream
+      operationId: deleteStream
+      tags:
+      - Streams
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Stream ID
+        schema:
+          type: string
+          format: objectid
+      responses:
+        '200':
+          description: Stream deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "deleted"
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/consumers:
+    post:
+      summary: Create a new NATS consumer
+      operationId: createConsumer
+      tags:
+      - Consumers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NATSConsumerInput'
+      responses:
+        '201':
+          description: Consumer created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: objectid
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List NATS consumers
+      operationId: listConsumers
+      tags:
+      - Consumers
+      parameters:
+      - name: streamName
+        in: query
+        description: Filter by stream name
+        schema:
+          type: string
+      - name: cluster
+        in: query
+        description: Filter by cluster
+        schema:
+          type: string
+      - name: status
+        in: query
+        description: Filter by status
+        schema:
+          type: string
+          enum: [ active, inactive ]
+      - name: limit
+        in: query
+        description: Maximum number of results
+        schema:
+          type: integer
+          default: 100
+          minimum: 1
+      - name: skip
+        in: query
+        description: Number of results to skip
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      responses:
+        '200':
+          description: List of NATS consumers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NATSConsumer'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/consumers/{id}:
+    get:
+      summary: Get a specific NATS consumer
+      operationId: getConsumer
+      tags:
+      - Consumers
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Consumer ID
+        schema:
+          type: string
+          format: objectid
+      responses:
+        '200':
+          description: Consumer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NATSConsumer'
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Consumer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update a NATS consumer
+      operationId: updateConsumer
+      tags:
+      - Consumers
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Consumer ID
+        schema:
+          type: string
+          format: objectid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NATSConsumerInput'
+      responses:
+        '200':
+          description: Consumer updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "updated"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete a NATS consumer
+      operationId: deleteConsumer
+      tags:
+      - Consumers
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Consumer ID
+        schema:
+          type: string
+          format: objectid
+      responses:
+        '200':
+          description: Consumer deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "deleted"
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/links/service-stream:
+    post:
+      summary: Create a service-stream link
+      operationId: createServiceStreamLink
+      tags:
+      - Links
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceStreamLinkInput'
+      responses:
+        '201':
+          description: Link created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: objectid
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List service-stream links
+      operationId: listServiceStreamLinks
+      tags:
+      - Links
+      parameters:
+      - name: serviceId
+        in: query
+        description: Filter by source service ID
+        schema:
+          type: string
+          format: objectid
+      - name: linkType
+        in: query
+        description: Filter by link type
+        schema:
+          type: string
+          enum: [ publisher, subscriber ]
+      - name: limit
+        in: query
+        description: Maximum number of results
+        schema:
+          type: integer
+          default: 100
+          minimum: 1
+      - name: skip
+        in: query
+        description: Number of results to skip
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      responses:
+        '200':
+          description: List of service-stream links
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceStreamLink'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/links/service-stream/{id}:
+    get:
+      summary: Get a specific service-stream link
+      operationId: getServiceStreamLink
+      tags:
+      - Links
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Link ID
+        schema:
+          type: string
+          format: objectid
+      responses:
+        '200':
+          description: Link details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceStreamLink'
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update a service-stream link
+      operationId: updateServiceStreamLink
+      tags:
+      - Links
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Link ID
+        schema:
+          type: string
+          format: objectid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceStreamLinkInput'
+      responses:
+        '200':
+          description: Link updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "updated"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete a service-stream link
+      operationId: deleteServiceStreamLink
+      tags:
+      - Links
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Link ID
+        schema:
+          type: string
+          format: objectid
+      responses:
+        '200':
+          description: Link deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "deleted"
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/links/consumer-service:
+    post:
+      summary: Create a consumer-service link
+      operationId: createConsumerServiceLink
+      tags:
+      - Links
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumerServiceLinkInput'
+      responses:
+        '201':
+          description: Link created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: objectid
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List consumer-service links
+      operationId: listConsumerServiceLinks
+      tags:
+      - Links
+      parameters:
+      - name: serviceId
+        in: query
+        description: Filter by service ID
+        schema:
+          type: string
+          format: objectid
+      - name: limit
+        in: query
+        description: Maximum number of results
+        schema:
+          type: integer
+          default: 100
+          minimum: 1
+      - name: skip
+        in: query
+        description: Number of results to skip
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      responses:
+        '200':
+          description: List of consumer-service links
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsumerServiceLink'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/links/consumer-service/{id}:
+    get:
+      summary: Get a specific consumer-service link
+      operationId: getConsumerServiceLink
+      tags:
+      - Links
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Link ID
+        schema:
+          type: string
+          format: objectid
+      responses:
+        '200':
+          description: Link details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumerServiceLink'
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update a consumer-service link
+      operationId: updateConsumerServiceLink
+      tags:
+      - Links
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Link ID
+        schema:
+          type: string
+          format: objectid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumerServiceLinkInput'
+      responses:
+        '200':
+          description: Link updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "updated"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete a consumer-service link
+      operationId: deleteConsumerServiceLink
+      tags:
+      - Links
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Link ID
+        schema:
+          type: string
+          format: objectid
+      responses:
+        '200':
+          description: Link deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "deleted"
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "invalid ID"
+      required:
+      - error
+
+    Port:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "http"
+        containerPort:
+          type: integer
+          example: 8080
+        protocol:
+          type: string
+          enum: [ TCP, UDP ]
+      required:
+      - name
+      - containerPort
+      - protocol
+
+    MicroserviceInput:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "order-service"
+        namespace:
+          type: string
+          example: "default"
+        cluster:
+          type: string
+          example: "prod"
+        image:
+          type: string
+          example: "order-service:1.0.0"
+        replicas:
+          type: integer
+          example: 3
+        status:
+          type: string
+          enum: [ Running, Pending, Failed, Unknown ]
+          example: "Running"
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            app: "orders"
+            version: "v1"
+        ports:
+          type: array
+          items:
+            $ref: '#/components/schemas/Port'
+      required:
+      - name
+      - namespace
+      - cluster
+      - image
+      - replicas
+      - status
+
+    Microservice:
+      allOf:
+      - $ref: '#/components/schemas/MicroserviceInput'
+      - type: object
+        properties:
+          id:
+            type: string
+            format: objectid
+            example: "507f1f77bcf86cd799439011"
+          createdAt:
+            type: string
+            format: date-time
+          updatedAt:
+            type: string
+            format: date-time
+          lastSyncedAt:
+            type: string
+            format: date-time
+        required:
+        - id
+        - createdAt
+        - updatedAt
+
+    Retention:
+      type: object
+      properties:
+        policy:
+          type: string
+          enum: [ limits, interest, workqueue ]
+          example: "limits"
+        maxAge:
+          type: integer
+          description: Maximum age in milliseconds
+          example: 604800000
+        maxBytes:
+          type: integer
+          description: Maximum bytes
+          example: 1073741824
+        maxMsgs:
+          type: integer
+          description: Maximum messages
+          example: 1000000
+
+    NATSStreamInput:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "orders-stream"
+        cluster:
+          type: string
+          example: "default"
+        subjects:
+          type: array
+          items:
+            type: string
+          example: [ "orders.>" ]
+        retention:
+          $ref: '#/components/schemas/Retention'
+        replicas:
+          type: integer
+          example: 3
+        storage:
+          type: string
+          enum: [ file, memory ]
+          example: "file"
+      required:
+      - name
+      - cluster
+      - subjects
+
+    NATSStream:
+      allOf:
+      - $ref: '#/components/schemas/NATSStreamInput'
+      - type: object
+        properties:
+          id:
+            type: string
+            format: objectid
+            example: "507f1f77bcf86cd799439012"
+          createdAt:
+            type: string
+            format: date-time
+          updatedAt:
+            type: string
+            format: date-time
+          lastSyncedAt:
+            type: string
+            format: date-time
+        required:
+        - id
+        - createdAt
+        - updatedAt
+
+    DeliveryPolicy:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [ all, last, new, byStartTime, byStartSeq ]
+          example: "all"
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+        startSeq:
+          type: integer
+          nullable: true
+          example: 0
+
+    NATSConsumerInput:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "order-processor"
+        streamName:
+          type: string
+          example: "orders-stream"
+        cluster:
+          type: string
+          example: "default"
+        consumerGroup:
+          type: string
+          example: "order-processors"
+        subjects:
+          type: array
+          items:
+            type: string
+          example: [ "orders.created" ]
+        deliveryPolicy:
+          $ref: '#/components/schemas/DeliveryPolicy'
+        ackPolicy:
+          type: string
+          enum: [ explicit, implicit, none ]
+          example: "explicit"
+        ackWait:
+          type: integer
+          description: Acknowledgment wait time in milliseconds
+          example: 30000
+        maxDeliver:
+          type: integer
+          example: 5
+        rateLimit:
+          type: integer
+          description: Rate limit in bytes per second
+          example: 0
+        status:
+          type: string
+          enum: [ active, inactive ]
+          example: "active"
+      required:
+      - name
+      - streamName
+      - cluster
+      - consumerGroup
+
+    NATSConsumer:
+      allOf:
+      - $ref: '#/components/schemas/NATSConsumerInput'
+      - type: object
+        properties:
+          id:
+            type: string
+            format: objectid
+            example: "507f1f77bcf86cd799439013"
+          createdAt:
+            type: string
+            format: date-time
+          updatedAt:
+            type: string
+            format: date-time
+          lastSyncedAt:
+            type: string
+            format: date-time
+        required:
+        - id
+        - createdAt
+        - updatedAt
+
+    ServiceStreamLinkInput:
+      type: object
+      properties:
+        sourceServiceId:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439011"
+        targetStreamId:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439012"
+        linkType:
+          type: string
+          enum: [ publisher, subscriber ]
+          example: "publisher"
+        cluster:
+          type: string
+          example: "default"
+        messageCount:
+          type: integer
+          example: 15000
+        throughputMsgsPerSec:
+          type: number
+          format: double
+          example: 42.5
+        errorRate:
+          type: number
+          format: double
+          example: 0.001
+      required:
+      - sourceServiceId
+      - targetStreamId
+      - linkType
+      - cluster
+
+    ServiceStreamLink:
+      allOf:
+      - $ref: '#/components/schemas/ServiceStreamLinkInput'
+      - type: object
+        properties:
+          id:
+            type: string
+            format: objectid
+            example: "507f1f77bcf86cd799439014"
+          lastMessageAt:
+            type: string
+            format: date-time
+          createdAt:
+            type: string
+            format: date-time
+          updatedAt:
+            type: string
+            format: date-time
+        required:
+        - id
+        - createdAt
+        - updatedAt
+
+    ConsumerServiceLinkInput:
+      type: object
+      properties:
+        consumerId:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439013"
+        serviceId:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439011"
+        cluster:
+          type: string
+          example: "default"
+        lagBytes:
+          type: integer
+          example: 1024
+        lagMessages:
+          type: integer
+          example: 50
+        consumerRate:
+          type: number
+          format: double
+          example: 100.5
+      required:
+      - consumerId
+      - serviceId
+      - cluster
+
+    ConsumerServiceLink:
+      allOf:
+      - $ref: '#/components/schemas/ConsumerServiceLinkInput'
+      - type: object
+        properties:
+          id:
+            type: string
+            format: objectid
+            example: "507f1f77bcf86cd799439015"
+          createdAt:
+            type: string
+            format: date-time
+          updatedAt:
+            type: string
+            format: date-time
+        required:
+        - id
+        - createdAt
+        - updatedAt
+
+tags:
+- name: Health
+  description: Health check endpoints
+- name: Microservices
+  description: Kubernetes microservice management
+- name: Streams
+  description: NATS JetStream management
+- name: Consumers
+  description: NATS JetStream consumer management
+- name: Links
+  description: Service and consumer relationships

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helmjet Atlas - Network Topology Visualizer</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <h1>
+            <span>⚡</span>
+            Helmjet Atlas - Network Topology
+            <span class="refresh-indicator"></span>
+        </h1>
+    </header>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="section">
+                <h2>API Server</h2>
+                <div class="input-group">
+                    <input type="text" id="apiUrl" placeholder="localhost:8080" value="localhost:8080">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Statistics</h2>
+                <div class="stats">
+                    <div class="stat-row">
+                        <span class="stat-label">Services</span>
+                        <span class="stat-value" id="serviceCount">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Streams</span>
+                        <span class="stat-value" id="streamCount">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Consumers</span>
+                        <span class="stat-value" id="consumerCount">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Namespaces</h2>
+                <div class="namespace-dropdown">
+                    <button id="namespaceToggle" class="dropdown-toggle">Select Namespaces ▾</button>
+                    <div id="namespaceDropdownMenu" class="dropdown-menu" style="display:none; max-height:220px; overflow:auto; border:1px solid #ccc; padding:6px; margin-top:6px;">
+                        <!-- Namespace checkboxes will be injected here -->
+                    </div>
+                    <div style="margin-top:6px;"><button id="clearNamespacesBtn">Clear</button></div>
+                </div>
+
+            </div>
+
+            <div class="section">
+                <h2>Microservices</h2>
+                <div class="upload-group">
+                    <input type="file" id="k8sUploadFile" accept="application/json">
+                    <label for="k8sUploadFile" class="file-picker-btn">Choose file</label>
+                    <span id="k8sFileName" class="file-name">No file chosen</span>
+                    <button id="k8sUploadBtn" class="upload-btn">Upload K8s JSON</button>
+                </div>
+                <div id="servicesList"></div>
+            </div>
+
+            <div class="section">
+                <h2>NATS Streams</h2>
+                <div class="upload-group">
+                    <input type="file" id="natsUploadFile" accept="application/json">
+                    <label for="natsUploadFile" class="file-picker-btn">Choose file</label>
+                    <span id="natsFileName" class="file-name">No file chosen</span>
+                    <button id="natsUploadBtn" class="upload-btn">Upload NATS JSON</button>
+                </div>
+                <div id="streamsList"></div>
+            </div>
+
+            <div class="section">
+                <h2>Consumers</h2>
+                <div id="consumersList"></div>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="controls">
+                <button id="refreshBtn">🔄 Refresh Data</button>
+                <button id="autoRefreshBtn">⏸️ Auto-Refresh: OFF</button>
+                <button id="fitBtn">📍 Fit to View</button>
+                <button id="resetBtn">↻ Reset Layout</button>
+                <button id="themeToggle">🌙 Dark Mode</button>
+            </div>
+
+            <div id="canvas">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading topology data...
+                </div>
+            </div>
+
+            <div id="infoPanel" class="info-panel"></div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-dot service"></div>
+                    <span>Microservice</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot stream"></div>
+                    <span>NATS Stream</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot consumer"></div>
+                    <span>Consumer</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="topology.js"></script>
+</body>
+
+</html>
